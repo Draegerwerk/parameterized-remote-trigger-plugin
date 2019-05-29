@@ -12,12 +12,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
+import javax.net.ssl.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
@@ -186,7 +189,7 @@ public class HttpHelper {
 		return cleanValue;
 	}
 
-	private static String readInputStream(HttpURLConnection connection) throws IOException {
+	private static String readInputStream(HttpsURLConnection connection) throws IOException {
 		BufferedReader rd = null;
 		try {
 
@@ -243,7 +246,7 @@ public class HttpHelper {
 				context.logger.println("reuse cached crumb: " + globalHost);
 				return jenkinsCrumb;
 			}
-			HttpURLConnection connection = getAuthorizedConnection(context, crumbProviderUrl, overrideAuth);
+			HttpsURLConnection connection = getAuthorizedConnection(context, crumbProviderUrl, overrideAuth);
 			int responseCode = connection.getResponseCode();
 			if (responseCode == 401) {
 				throw new UnauthorizedException(crumbProviderUrl);
@@ -277,7 +280,7 @@ public class HttpHelper {
 	 * @param context
 	 * @throws IOException
 	 */
-	private static void addCrumbToConnection(HttpURLConnection connection, BuildContext context, Auth2 overrideAuth,
+	private static void addCrumbToConnection(HttpsURLConnection connection, BuildContext context, Auth2 overrideAuth,
 			boolean isCacheEnabled) throws IOException {
 		String method = connection.getRequestMethod();
 		if (method != null && method.equalsIgnoreCase("POST")) {
@@ -288,7 +291,7 @@ public class HttpHelper {
 		}
 	}
 
-	private static HttpURLConnection getAuthorizedConnection(BuildContext context, URL url, Auth2 overrideAuth)
+	private static HttpsURLConnection getAuthorizedConnection(BuildContext context, URL url, Auth2 overrideAuth)
 			throws IOException {
 		URLConnection connection = context.effectiveRemoteServer.isUseProxy() ? ProxyConfiguration.open(url)
 				: url.openConnection();
@@ -303,7 +306,7 @@ public class HttpHelper {
 			serverAuth.setAuthorizationHeader(connection, context);
 		}
 
-		return (HttpURLConnection) connection;
+		return (HttpsURLConnection) connection;
 	}
 
 	private static String getUrlWithoutParameters(String url) {
@@ -387,7 +390,6 @@ public class HttpHelper {
 	 * of a failed connection, the method calls it self recursively and increments
 	 * the number of attempts.
 	 *
-	 * @see sendHTTPCall
 	 * @param urlString
 	 *            the URL that needs to be called.
 	 * @param requestType
@@ -420,6 +422,7 @@ public class HttpHelper {
 		JSONObject responseObject = null;
 		Map<String, List<String>> responseHeader = null;
 		int responseCode = 0;
+		boolean trustAllCertificates = context.effectiveRemoteServer.getTrustAllCertificates();
 
 		byte[] postDataBytes = new byte[] {};
 		String parmsString = "";
@@ -429,10 +432,26 @@ public class HttpHelper {
 		}
 
 		URL url = new URL(urlString);
-		HttpURLConnection conn = getAuthorizedConnection(context, url, overrideAuth);
+		HttpsURLConnection conn = getAuthorizedConnection(context, url, overrideAuth);
 
 		try {
 			conn.setDoInput(true);
+
+			if (trustAllCertificates) {
+				// Installing the naive TrustManager
+				try {
+					SSLContext ctx = SSLContext.getInstance("TLS");
+					ctx.init(new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom());
+					// SSLContext.setDefault(ctx);
+					conn.setSSLSocketFactory(ctx.getSocketFactory());
+
+					// Trust every hostname
+					HostnameVerifier allHostsValid = (hostname, session) -> true;
+					conn.setHostnameVerifier(allHostsValid);
+				} catch (NoSuchAlgorithmException | KeyManagementException e) {
+					context.logger.println(e.toString());
+				}
+			}
 			conn.setRequestProperty("Accept", "application/json");
 			conn.setRequestProperty("Accept-Language", "UTF-8");
 			conn.setRequestMethod(requestType);
@@ -440,7 +459,7 @@ public class HttpHelper {
 			// wait up to 5 seconds for the connection to be open
 			conn.setConnectTimeout(5000);
 			if (HTTP_POST.equalsIgnoreCase(requestType)) {
-				// use longer timeout during POST due to not performing retrys since POST is not idem-potent
+				// use longer timeout during POST due to not performing retries since POST is not idem-potent
 				conn.setReadTimeout(30000);
 				conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 				conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
@@ -491,7 +510,7 @@ public class HttpHelper {
 				// non-parameterized jobs), it returns a string indicating the status.
 				// But in newer versions of Jenkins, it just returns an empty response.
 				// So we need to compensate and check for both.
-				if (responseCode >= 400 || JSONUtils.mayBeJSON(response) == false) {
+				if (responseCode >= 400 || !JSONUtils.mayBeJSON(response)) {
 					return new ConnectionResponse(responseHeader, responseCode);
 				} else {
 					responseObject = (JSONObject) JSONSerializer.toJSON(response);
@@ -514,7 +533,7 @@ public class HttpHelper {
 						getUrlWithoutParameters(urlString), parmsString));
 
 				// Sleep for 'pollInterval' seconds.
-				// Sleep takes miliseconds so need to convert this.pollInterval to milisecopnds
+				// Sleep takes milliseconds so need to convert this.pollInterval to milliseconds
 				// (x 1000)
 				try {
 					// Could do with a better way of sleeping...
