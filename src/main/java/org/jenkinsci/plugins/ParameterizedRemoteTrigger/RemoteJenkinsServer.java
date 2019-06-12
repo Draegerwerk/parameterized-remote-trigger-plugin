@@ -170,21 +170,17 @@ public class RemoteJenkinsServer extends AbstractDescribableImpl<RemoteJenkinsSe
          * @param conn  The HttpsURLConnection you want to modify.
          * @param trustAllCertificates  A boolean, gotten from the Remote Hosts description
          */
-        public void makeConnectionTrustAllCertificates(HttpsURLConnection conn, boolean trustAllCertificates){
+        public void makeConnectionTrustAllCertificates(HttpsURLConnection conn, boolean trustAllCertificates)
+                throws NoSuchAlgorithmException, KeyManagementException {
             if (trustAllCertificates) {
-                // Installing the naive manage
-                try {
-                    SSLContext ctx = SSLContext.getInstance("TLS");
-                    ctx.init(new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom());
-                    // SSLContext.setDefault(ctx);
-                    conn.setSSLSocketFactory(ctx.getSocketFactory());
+                SSLContext ctx = SSLContext.getInstance("TLS");
+                ctx.init(new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom());
+                // SSLContext.setDefault(ctx);
+                conn.setSSLSocketFactory(ctx.getSocketFactory());
 
-                    // Trust every hostname
-                    HostnameVerifier allHostsValid = (hostname, session) -> true;
-                    conn.setHostnameVerifier(allHostsValid);
-                } catch (NoSuchAlgorithmException | KeyManagementException e) {
-                    conn = null;
-                }
+                // Trust every hostname
+                HostnameVerifier allHostsValid = (hostname, session) -> true;
+                conn.setHostnameVerifier(allHostsValid);
             }
         }
 
@@ -216,9 +212,10 @@ public class RemoteJenkinsServer extends AbstractDescribableImpl<RemoteJenkinsSe
             // check that the host is reachable
             try {
                 HttpsURLConnection conn = (HttpsURLConnection) host.openConnection();
-                makeConnectionTrustAllCertificates(conn, trustAllCertificates);
-                if (conn == null) {
-                    return FormValidation.error("A key management error occurred.");
+                try {
+                    makeConnectionTrustAllCertificates(conn, trustAllCertificates);
+                } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                    return FormValidation.error(e, "A key management error occurred.");
                 }
                 conn.setConnectTimeout(5000);
                 conn.connect();
