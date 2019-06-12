@@ -71,7 +71,6 @@ public class RemoteBuildPipelineStep extends Step {
 		remoteBuildConfig.setShouldNotFailBuild(false); // We need to get notified. Failure feedback is collected async
 														// then.
 		remoteBuildConfig.setBlockBuildUntilComplete(true); // default for Pipeline Step
-		remoteBuildConfig.setTrustAllCertificates(false); // default for Pipeline Step
 	}
 
 	@DataBoundSetter
@@ -107,6 +106,11 @@ public class RemoteBuildPipelineStep extends Step {
 	@DataBoundSetter
 	public void setTrustAllCertificates(boolean trustAllCertificates) {
 		remoteBuildConfig.setTrustAllCertificates(trustAllCertificates);
+	}
+
+	@DataBoundSetter
+	public void setOverrideTrustAllCertificates(boolean overrideTrustAllCertificates) {
+		remoteBuildConfig.setOverrideTrustAllCertificates(overrideTrustAllCertificates);
 	}
 
 	@DataBoundSetter
@@ -298,6 +302,10 @@ public class RemoteBuildPipelineStep extends Step {
 
 	public boolean getTrustAllCertificates() {
 		return remoteBuildConfig.getTrustAllCertificates();
+	}
+
+	public boolean getOverrideTrustAllCertificates() {
+		return remoteBuildConfig.getOverrideTrustAllCertificates();
 	}
 
 	public boolean getPreventRemoteBuildQueue() {

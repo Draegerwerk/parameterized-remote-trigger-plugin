@@ -53,6 +53,8 @@ public class RemoteJenkinsServer extends AbstractDescribableImpl<RemoteJenkinsSe
     private String     displayName;
     private boolean    hasBuildTokenRootSupport;
     private boolean    trustAllCertificates;
+    private boolean    overrideTrustAllCertificates;
+
     @CheckForNull
     private Auth2      auth2;
     @CheckForNull
@@ -83,6 +85,11 @@ public class RemoteJenkinsServer extends AbstractDescribableImpl<RemoteJenkinsSe
     @DataBoundSetter
     public void setTrustAllCertificates(boolean trustAllCertificates) {
         this.trustAllCertificates = trustAllCertificates;
+    }
+
+    @DataBoundSetter
+    public void setOverrideTrustAllCertificates(boolean overrideTrustAllCertificates) {
+        this.overrideTrustAllCertificates = overrideTrustAllCertificates;
     }
 
     @DataBoundSetter
@@ -153,6 +160,8 @@ public class RemoteJenkinsServer extends AbstractDescribableImpl<RemoteJenkinsSe
     }
 
     public boolean getTrustAllCertificates() { return trustAllCertificates; }
+
+    public boolean getOverrideTrustAllCertificates() { return overrideTrustAllCertificates; }
 
 
     @Extension

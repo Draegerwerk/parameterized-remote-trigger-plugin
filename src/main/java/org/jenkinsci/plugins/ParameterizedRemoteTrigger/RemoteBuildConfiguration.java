@@ -104,6 +104,7 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 	private Auth2 auth2;
 	private boolean shouldNotFailBuild;
 	private boolean trustAllCertificates;
+	private boolean overrideTrustAllCertificates;
 	private boolean preventRemoteBuildQueue;
 	private int pollInterval;
 	private boolean blockBuildUntilComplete;
@@ -156,6 +157,11 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 	@DataBoundSetter
 	public void setTrustAllCertificates(boolean trustAllCertificates) {
 		this.trustAllCertificates = trustAllCertificates;
+	}
+
+	@DataBoundSetter
+	public void setOverrideTrustAllCertificates(boolean overrideTrustAllCertificates) {
+		this.overrideTrustAllCertificates = overrideTrustAllCertificates;
 	}
 
 	@DataBoundSetter
@@ -428,7 +434,9 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 			}
 		}
 
-		server.setTrustAllCertificates(this.trustAllCertificates);
+		if (this.overrideTrustAllCertificates) {
+            server.setTrustAllCertificates(this.trustAllCertificates);
+        }
 
 		return server;
 	}
@@ -908,7 +916,7 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 		String _jobExpandedLogEntry = (_job.equals(_jobExpanded)) ? "" : "(" + _jobExpanded + ")";
 		String _remoteJenkinsName = getRemoteJenkinsName();
 		String _remoteJenkinsUrl = getRemoteJenkinsUrl();
-		boolean _trustAllCertificates = getTrustAllCertificates();
+		boolean _trustAllCertificates = context.effectiveRemoteServer.getTrustAllCertificates();
 
 		Auth2 _auth = getAuth2();
 		int _connectionRetryLimit = getConnectionRetryLimit();
@@ -1151,6 +1159,10 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 		return trustAllCertificates;
 	}
 
+	public boolean getOverrideTrustAllCertificates() {
+		return overrideTrustAllCertificates;
+	}
+
 	// This indicates to Jenkins that this is an implementation of an extension
 	// point.
 	@Extension
@@ -1220,7 +1232,6 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 
 		@Restricted(NoExternalUse.class)
 		public FormValidation doCheckTrustAllCertificates(@QueryParameter("trustAllCertificates") final boolean value){
-
 			if (value) {
 				return FormValidation.warning("Accepting all certificates is potentially unsafe.");
 			}
