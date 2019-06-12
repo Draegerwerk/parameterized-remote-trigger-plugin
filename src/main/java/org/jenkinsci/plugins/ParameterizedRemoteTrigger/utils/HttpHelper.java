@@ -291,6 +291,18 @@ public class HttpHelper {
 		}
 	}
 
+	/**
+	 * Returns an authorized HttpsURLConnection
+	 * If the user wanted to trust all certificates, the TrustManager and HostVerifier of the connection
+	 * will be set properly.
+	 *
+	 * ATTENTION: THIS IS VERY DANGEROUS AND SHOULD ONLY BE USED IF YOU KNOW WHAT YOU DO!
+	 * @param context The build context
+	 * @param url The url to the remote build
+	 * @param overrideAuth
+	 * @return An authorized connection with or without a NaiveTrustManager
+	 * @throws IOException
+	 */
 	private static HttpsURLConnection getAuthorizedConnection(BuildContext context, URL url, Auth2 overrideAuth)
 			throws IOException {
 		URLConnection connection = context.effectiveRemoteServer.isUseProxy() ? ProxyConfiguration.open(url)
@@ -305,8 +317,24 @@ public class HttpHelper {
 			// Set Authorization Header configured globally for remoteServer
 			serverAuth.setAuthorizationHeader(connection, context);
 		}
+		HttpsURLConnection conn = (HttpsURLConnection) connection;
 
-		return (HttpsURLConnection) connection;
+		if (context.effectiveRemoteServer.getTrustAllCertificates()){
+			// Installing the naive manage
+			try {
+				SSLContext ctx = SSLContext.getInstance("TLS");
+				ctx.init(new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom());
+				// SSLContext.setDefault(ctx);
+				conn.setSSLSocketFactory(ctx.getSocketFactory());
+
+				// Trust every hostname
+				HostnameVerifier allHostsValid = (hostname, session) -> true;
+				conn.setHostnameVerifier(allHostsValid);
+			} catch (NoSuchAlgorithmException | KeyManagementException e) {
+				context.logger.println("Unable to trust all certificates.");
+			}
+		}
+		return conn;
 	}
 
 	private static String getUrlWithoutParameters(String url) {
@@ -422,7 +450,6 @@ public class HttpHelper {
 		JSONObject responseObject = null;
 		Map<String, List<String>> responseHeader = null;
 		int responseCode = 0;
-		boolean trustAllCertificates = context.effectiveRemoteServer.getTrustAllCertificates();
 
 		byte[] postDataBytes = new byte[] {};
 		String parmsString = "";
@@ -436,22 +463,6 @@ public class HttpHelper {
 
 		try {
 			conn.setDoInput(true);
-
-			if (trustAllCertificates) {
-				// Installing the naive TrustManager
-				try {
-					SSLContext ctx = SSLContext.getInstance("TLS");
-					ctx.init(new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom());
-					// SSLContext.setDefault(ctx);
-					conn.setSSLSocketFactory(ctx.getSocketFactory());
-
-					// Trust every hostname
-					HostnameVerifier allHostsValid = (hostname, session) -> true;
-					conn.setHostnameVerifier(allHostsValid);
-				} catch (NoSuchAlgorithmException | KeyManagementException e) {
-					context.logger.println(e.toString());
-				}
-			}
 			conn.setRequestProperty("Accept", "application/json");
 			conn.setRequestProperty("Accept-Language", "UTF-8");
 			conn.setRequestMethod(requestType);
@@ -528,7 +539,7 @@ public class HttpHelper {
 			// If we have connectionRetryLimit set to > 0 then retry that many times.
 			if (numberOfAttempts <= retryLimit) {
 				context.logger.println(String.format(
-						"Connection to remote server failed %s, waiting for to retry - %s seconds until next attempt. URL: %s, parameters: %s",
+						"Connection to remote server failed %s, waiting to retry - %s seconds until next attempt. URL: %s, parameters: %s",
 						(responseCode == 0 ? "" : "[" + responseCode + "]"), pollInterval,
 						getUrlWithoutParameters(urlString), parmsString));
 

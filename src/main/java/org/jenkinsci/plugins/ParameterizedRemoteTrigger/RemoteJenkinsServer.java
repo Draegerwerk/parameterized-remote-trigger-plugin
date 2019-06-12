@@ -163,6 +163,32 @@ public class RemoteJenkinsServer extends AbstractDescribableImpl<RemoteJenkinsSe
         }
 
         /**
+         * Sets the TrustManager to be a "NaiveTrustManager", allowing us to ignore untrusted certificates
+         * Will set the connection to null, if a key management error occurred.
+         *
+         * ATTENTION: THIS IS VERY DANGEROUS AND SHOULD ONLY BE USED IF YOU KNOW WHAT YOU DO!
+         * @param conn  The HttpsURLConnection you want to modify.
+         * @param trustAllCertificates  A boolean, gotten from the Remote Hosts description
+         */
+        public void makeConnectionTrustAllCertificates(HttpsURLConnection conn, boolean trustAllCertificates){
+            if (trustAllCertificates) {
+                // Installing the naive manage
+                try {
+                    SSLContext ctx = SSLContext.getInstance("TLS");
+                    ctx.init(new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom());
+                    // SSLContext.setDefault(ctx);
+                    conn.setSSLSocketFactory(ctx.getSocketFactory());
+
+                    // Trust every hostname
+                    HostnameVerifier allHostsValid = (hostname, session) -> true;
+                    conn.setHostnameVerifier(allHostsValid);
+                } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                    conn = null;
+                }
+            }
+        }
+
+        /**
          * Validates the given address to see that it's well-formed, and is reachable.
          *
          * @param address
@@ -190,20 +216,9 @@ public class RemoteJenkinsServer extends AbstractDescribableImpl<RemoteJenkinsSe
             // check that the host is reachable
             try {
                 HttpsURLConnection conn = (HttpsURLConnection) host.openConnection();
-                if (trustAllCertificates) {
-                    // Installing the naive manage
-                    try {
-                        SSLContext ctx = SSLContext.getInstance("TLS");
-                        ctx.init(new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom());
-                        // SSLContext.setDefault(ctx);
-                        conn.setSSLSocketFactory(ctx.getSocketFactory());
-
-                        // Trust every hostname
-                        HostnameVerifier allHostsValid = (hostname, session) -> true;
-                        conn.setHostnameVerifier(allHostsValid);
-                    } catch (NoSuchAlgorithmException | KeyManagementException e) {
-                        return FormValidation.warning(e, "A key management error occurred.");
-                    }
+                makeConnectionTrustAllCertificates(conn, trustAllCertificates);
+                if (conn == null) {
+                    return FormValidation.error("A key management error occurred.");
                 }
                 conn.setConnectTimeout(5000);
                 conn.connect();
