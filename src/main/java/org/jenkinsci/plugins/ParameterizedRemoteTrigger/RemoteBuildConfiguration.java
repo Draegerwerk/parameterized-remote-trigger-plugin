@@ -938,7 +938,7 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 		}
 		context.logger.println(String.format("    - blockBuildUntilComplete: %s", _blockBuildUntilComplete));
 		context.logger.println(String.format("    - connectionRetryLimit:    %s", _connectionRetryLimit));
-		context.logger.println(String.format("    - TrustAllCertificates:    %s", _trustAllCertificates));
+		context.logger.println(String.format("    - trustAllCertificates:    %s", _trustAllCertificates));
 		context.logger.println(
 				"################################################################################################################");
 	}

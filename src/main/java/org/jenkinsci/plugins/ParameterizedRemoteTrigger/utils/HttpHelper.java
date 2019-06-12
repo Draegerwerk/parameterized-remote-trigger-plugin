@@ -18,6 +18,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -201,7 +202,7 @@ public class HttpHelper {
 				is = connection.getErrorStream();
 			}
 
-			rd = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+			rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 			String line;
 			StringBuilder response = new StringBuilder();
 			while ((line = rd.readLine()) != null) {
@@ -454,7 +455,7 @@ public class HttpHelper {
 		String parmsString = "";
 		if (HTTP_POST.equalsIgnoreCase(requestType) && postParams != null && postParams.size() > 0) {
 			parmsString = buildUrlQueryString(postParams);
-			postDataBytes = parmsString.getBytes("UTF-8");
+			postDataBytes = parmsString.getBytes(StandardCharsets.UTF_8);
 		}
 
 		URL url = new URL(urlString);
@@ -527,6 +528,10 @@ public class HttpHelper {
 				}
 			}
 
+		} catch (SSLHandshakeException handshakeException) {
+			context.logger.println("An SSLHandshakeException occured. The certificate might not be trusted!\n" +
+					"Set 'Trust all certificates' and try again, if you want to accept untrusted certificates.\n");
+			throw handshakeException;
 		} catch (IOException e) {
 
 			// E.g. "HTTP/1.1 403 No valid crumb was included in the request"
@@ -545,25 +550,17 @@ public class HttpHelper {
 				// Sleep for 'pollInterval' seconds.
 				// Sleep takes milliseconds so need to convert this.pollInterval to milliseconds
 				// (x 1000)
-				try {
-					// Could do with a better way of sleeping...
-					Thread.sleep(pollInterval * 1000);
-				} catch (InterruptedException ex) {
-					throw ex;
-				}
+				// Could do with a better way of sleeping...
+				Thread.sleep(pollInterval * 1000);
 
 				context.logger.println("Retry attempt #" + numberOfAttempts + " out of " + retryLimit);
 				numberOfAttempts++;
 				return sendHTTPCall(urlString, requestType, context, postParams, numberOfAttempts, pollInterval,
 						retryLimit, overrideAuth, rawRespRef, isCrubmCacheEnabled);
 
-			} else if (numberOfAttempts > retryLimit) {
+			} else {
 				// reached the maximum number of retries, time to fail
 				throw new ExceedRetryLimitException();
-			} else {
-				// something failed with the connection and we retried the max amount of
-				// times... so throw an exception to mark the build as failed.
-				throw e;
 			}
 
 		} finally {
