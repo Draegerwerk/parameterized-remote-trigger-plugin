@@ -103,6 +103,7 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 	private String remoteJenkinsUrl;
 	private Auth2 auth2;
 	private boolean shouldNotFailBuild;
+	private boolean trustAllCertificates;
 	private boolean preventRemoteBuildQueue;
 	private int pollInterval;
 	private boolean blockBuildUntilComplete;
@@ -150,6 +151,11 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 			hostPermits = new HashMap<>();
 		}
 		return this;
+	}
+
+	@DataBoundSetter
+	public void setTrustAllCertificates(boolean trustAllCertificates) {
+		this.trustAllCertificates = trustAllCertificates;
 	}
 
 	@DataBoundSetter
@@ -421,6 +427,8 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 				hostPermits.put(url.getHost(), maxConn);
 			}
 		}
+
+		server.setTrustAllCertificates(this.trustAllCertificates);
 
 		return server;
 	}
@@ -851,8 +859,7 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 			} else {
 				context.logger.println("WARNING: Unhandled condition!");
 			}
-		} catch (Exception ex) {
-		}
+		} catch (Exception ignored) {}
 		return buildInfo;
 	}
 
@@ -885,11 +892,11 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 		if (localAuth != null && !(localAuth instanceof NullAuth)) {
 			String authString = (context.run == null) ? localAuth.getDescriptor().getDisplayName()
 					: localAuth.toString((Item) context.run.getParent());
-			context.logger.println(String.format("  Using job-level defined " + authString));
+			context.logger.println("  Using job-level defined " + authString);
 		} else if (serverAuth != null && !(serverAuth instanceof NullAuth)) {
 			String authString = (context.run == null) ? serverAuth.getDescriptor().getDisplayName()
 					: serverAuth.toString((Item) context.run.getParent());
-			context.logger.println(String.format("  Using globally defined " + authString));
+			context.logger.println("  Using globally defined " + authString);
 		} else {
 			context.logger.println("  No credentials configured");
 		}
@@ -901,6 +908,8 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 		String _jobExpandedLogEntry = (_job.equals(_jobExpanded)) ? "" : "(" + _jobExpanded + ")";
 		String _remoteJenkinsName = getRemoteJenkinsName();
 		String _remoteJenkinsUrl = getRemoteJenkinsUrl();
+		boolean _trustAllCertificates = getTrustAllCertificates();
+
 		Auth2 _auth = getAuth2();
 		int _connectionRetryLimit = getConnectionRetryLimit();
 		boolean _blockBuildUntilComplete = getBlockBuildUntilComplete();
@@ -929,6 +938,7 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 		}
 		context.logger.println(String.format("    - blockBuildUntilComplete: %s", _blockBuildUntilComplete));
 		context.logger.println(String.format("    - connectionRetryLimit:    %s", _connectionRetryLimit));
+		context.logger.println(String.format("    - TrustAllCertificates:    %s", _trustAllCertificates));
 		context.logger.println(
 				"################################################################################################################");
 	}
@@ -1137,6 +1147,10 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 		return useJobInfoCache;
 	}
 
+	public boolean getTrustAllCertificates() {
+		return trustAllCertificates;
+	}
+
 	// This indicates to Jenkins that this is an implementation of an extension
 	// point.
 	@Extension
@@ -1202,6 +1216,15 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 			save();
 
 			return super.configure(req, formData);
+		}
+
+		@Restricted(NoExternalUse.class)
+		public FormValidation doCheckTrustAllCertificates(@QueryParameter("trustAllCertificates") final boolean value){
+
+			if (value) {
+				return FormValidation.warning("Accepting all certificates is potentially unsafe.");
+			}
+			return FormValidation.ok();
 		}
 
 		@Restricted(NoExternalUse.class)

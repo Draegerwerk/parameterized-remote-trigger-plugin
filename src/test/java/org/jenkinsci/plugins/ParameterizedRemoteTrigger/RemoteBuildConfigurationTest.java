@@ -179,6 +179,7 @@ public class RemoteBuildConfigurationTest {
       assertEquals(false, config.getPreventRemoteBuildQueue());
       assertEquals(null, config.getRemoteJenkinsName());
       assertEquals(false, config.getShouldNotFailBuild());
+      assertEquals(false, config.getTrustAllCertificates());
       assertEquals("", config.getToken());
     }
 
@@ -198,6 +199,7 @@ public class RemoteBuildConfigurationTest {
       assertEquals(false, config.getPreventRemoteBuildQueue());
       assertEquals(null, config.getRemoteJenkinsName());
       assertEquals(false, config.getShouldNotFailBuild());
+      assertEquals(false, config.getTrustAllCertificates());
       assertEquals("", config.getToken());
     }
 

@@ -175,7 +175,6 @@ public class RemoteJenkinsServer extends AbstractDescribableImpl<RemoteJenkinsSe
             if (trustAllCertificates) {
                 SSLContext ctx = SSLContext.getInstance("TLS");
                 ctx.init(new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom());
-                // SSLContext.setDefault(ctx);
                 conn.setSSLSocketFactory(ctx.getSocketFactory());
 
                 // Trust every hostname

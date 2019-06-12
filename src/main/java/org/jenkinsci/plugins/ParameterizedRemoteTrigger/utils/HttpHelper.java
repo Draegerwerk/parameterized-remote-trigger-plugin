@@ -324,7 +324,6 @@ public class HttpHelper {
 			try {
 				SSLContext ctx = SSLContext.getInstance("TLS");
 				ctx.init(new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom());
-				// SSLContext.setDefault(ctx);
 				conn.setSSLSocketFactory(ctx.getSocketFactory());
 
 				// Trust every hostname
@@ -375,7 +374,7 @@ public class HttpHelper {
 		String query = "";
 
 		if (context.effectiveRemoteServer.getHasBuildTokenRootSupport()) {
-			// start building the proper URL based on known capabiltiies of the remote
+			// start building the proper URL based on known capabilities of the remote
 			// server
 			if (context.effectiveRemoteServer.getAddress() == null) {
 				throw new AbortException(
