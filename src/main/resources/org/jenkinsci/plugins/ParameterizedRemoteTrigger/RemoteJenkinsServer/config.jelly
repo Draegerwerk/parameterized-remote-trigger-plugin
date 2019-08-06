@@ -8,10 +8,6 @@
         <f:checkbox />
     </f:entry>
 
-    <f:entry title="Trust all certificates" field="trustAllCertificates">
-        <f:checkbox />
-    </f:entry>
-
     <f:dropdownDescriptorSelector field="auth2" title="Authentication" descriptors="${descriptor.getAuth2Descriptors()}" default="${descriptor.getDefaultAuth2Descriptor()}"/>
 
 
@@ -29,6 +25,11 @@
         </div>
     </f:entry>
 
+    <f:optionalBlock field="overrideTrustAllCertificates" title="Override trust all certificates" inline="true">
+      <f:entry title="Trust all certificates" field="trustAllCertificates">
+        <f:checkbox />
+      </f:entry>
+    </f:optionalBlock>
 
     <hr/>
 </j:jelly>
