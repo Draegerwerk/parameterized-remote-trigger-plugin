@@ -318,11 +318,10 @@ public class RemoteBuildConfigurationTest {
      * @throws IOException
      */
     @Test @WithoutJenkins
-    public void testRemoteUrlOverridesTrustAllCertificates() throws IOException {
+    public void testRemoteOverridesTrustAllCertificates() throws IOException {
         RemoteBuildConfiguration config = new RemoteBuildConfiguration();
         config.setJob("MyJob");
         config.setTrustAllCertificates(false);
-        config.setOverrideTrustAllCertificates(true);
 
         config = mockGlobalRemoteHost(config,
                 "remoteJenkinsName",
@@ -421,12 +420,12 @@ public class RemoteBuildConfigurationTest {
         RemoteJenkinsServer jenkinsServer = new RemoteJenkinsServer();
         jenkinsServer.setDisplayName(remoteName);
         jenkinsServer.setAddress(remoteUrl);
-        jenkinsServer.setTrustAllCertificates(trustAllCertificates);
 
         RemoteBuildConfiguration spy = spy(config);
         DescriptorImpl descriptor = DescriptorImpl.newInstanceForTests();
         descriptor.setRemoteSites(jenkinsServer);
         doReturn(descriptor).when(spy).getDescriptor();
+        spy.setTrustAllCertificates(trustAllCertificates);
 
         return spy;
     }
