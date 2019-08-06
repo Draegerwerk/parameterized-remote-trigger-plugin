@@ -99,9 +99,6 @@ public class RemoteBuildConfigurationTest {
 	private void _testRemoteBuild(boolean authenticate, boolean withParam, FreeStyleProject remoteProject, Map<String, String> parms) throws Exception {
 
         String remoteUrl = jenkinsRule.getURL().toString();
-        if (!remoteUrl.contains("https")) {
-            remoteUrl = remoteUrl.replaceFirst("http", "https");
-        }
         RemoteJenkinsServer remoteJenkinsServer = new RemoteJenkinsServer();
         remoteJenkinsServer.setDisplayName("JENKINS");
         remoteJenkinsServer.setAddress(remoteUrl);
