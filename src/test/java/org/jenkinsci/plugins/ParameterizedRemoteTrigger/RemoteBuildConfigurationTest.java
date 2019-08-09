@@ -116,6 +116,7 @@ public class RemoteBuildConfigurationTest {
         configuration.setUseCrumbCache(false);
         configuration.setUseJobInfoCache(false);
         configuration.setEnhancedLogging(true);
+        configuration.setTrustAllCertificates(true);
         if (withParam){
         	String parmString = "";
         	for (Map.Entry<String, String> p : parms.entrySet()) {

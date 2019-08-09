@@ -13,11 +13,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import javax.net.ssl.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -190,7 +186,7 @@ public class HttpHelper {
 		return cleanValue;
 	}
 
-	private static String readInputStream(HttpsURLConnection connection) throws IOException {
+	private static String readInputStream(HttpURLConnection connection) throws IOException {
 		BufferedReader rd = null;
 		try {
 
@@ -247,7 +243,7 @@ public class HttpHelper {
 				context.logger.println("reuse cached crumb: " + globalHost);
 				return jenkinsCrumb;
 			}
-			HttpsURLConnection connection = getAuthorizedConnection(context, crumbProviderUrl, overrideAuth);
+			HttpURLConnection connection = (HttpURLConnection) getAuthorizedConnection(context, crumbProviderUrl, overrideAuth);
 			int responseCode = connection.getResponseCode();
 			if (responseCode == 401) {
 				throw new UnauthorizedException(crumbProviderUrl);
@@ -281,7 +277,7 @@ public class HttpHelper {
 	 * @param context
 	 * @throws IOException
 	 */
-	private static void addCrumbToConnection(HttpsURLConnection connection, BuildContext context, Auth2 overrideAuth,
+	private static void addCrumbToConnection(HttpURLConnection connection, BuildContext context, Auth2 overrideAuth,
 			boolean isCacheEnabled) throws IOException {
 		String method = connection.getRequestMethod();
 		if (method != null && method.equalsIgnoreCase("POST")) {
@@ -304,7 +300,7 @@ public class HttpHelper {
 	 * @return An authorized connection with or without a NaiveTrustManager
 	 * @throws IOException
 	 */
-	private static HttpsURLConnection getAuthorizedConnection(BuildContext context, URL url, Auth2 overrideAuth)
+	private static URLConnection getAuthorizedConnection(BuildContext context, URL url, Auth2 overrideAuth)
 			throws IOException {
 		URLConnection connection = context.effectiveRemoteServer.isUseProxy() ? ProxyConfiguration.open(url)
 				: url.openConnection();
@@ -318,23 +314,26 @@ public class HttpHelper {
 			// Set Authorization Header configured globally for remoteServer
 			serverAuth.setAuthorizationHeader(connection, context);
 		}
-		HttpsURLConnection conn = (HttpsURLConnection) connection;
 
-		if (context.effectiveRemoteServer.getTrustAllCertificates()){
-			// Installing the naive manage
-			try {
-				SSLContext ctx = SSLContext.getInstance("TLS");
-				ctx.init(new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom());
-				conn.setSSLSocketFactory(ctx.getSocketFactory());
+		if (connection instanceof HttpsURLConnection) {
+			HttpsURLConnection conn = (HttpsURLConnection) connection;
+			if (context.effectiveRemoteServer.getTrustAllCertificates()) {
+				// Installing the naive manage
+				try {
+					SSLContext ctx = SSLContext.getInstance("TLS");
+					ctx.init(new KeyManager[0], new TrustManager[]{new NaiveTrustManager()}, new SecureRandom());
+					conn.setSSLSocketFactory(ctx.getSocketFactory());
 
-				// Trust every hostname
-				HostnameVerifier allHostsValid = (hostname, session) -> true;
-				conn.setHostnameVerifier(allHostsValid);
-			} catch (NoSuchAlgorithmException | KeyManagementException e) {
-				context.logger.println("Unable to trust all certificates.");
+					// Trust every hostname
+					HostnameVerifier allHostsValid = (hostname, session) -> true;
+					conn.setHostnameVerifier(allHostsValid);
+				} catch (NoSuchAlgorithmException | KeyManagementException e) {
+					context.logger.println("Unable to trust all certificates.");
+				}
 			}
+			return conn;
 		}
-		return conn;
+		return connection;
 	}
 
 	private static String getUrlWithoutParameters(String url) {
@@ -459,7 +458,7 @@ public class HttpHelper {
 		}
 
 		URL url = new URL(urlString);
-		HttpsURLConnection conn = getAuthorizedConnection(context, url, overrideAuth);
+		HttpURLConnection conn = (HttpURLConnection) getAuthorizedConnection(context, url, overrideAuth);;
 
 		try {
 			conn.setDoInput(true);
