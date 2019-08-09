@@ -289,11 +289,11 @@ public class HttpHelper {
 	}
 
 	/**
-	 * Returns an authorized HttpsURLConnection
+	 * Returns a URLConnection which can be casted to HttpUrlConnection or HttpsUrlConnection
 	 * If the user wanted to trust all certificates, the TrustManager and HostVerifier of the connection
 	 * will be set properly.
 	 *
-	 * ATTENTION: THIS IS VERY DANGEROUS AND SHOULD ONLY BE USED IF YOU KNOW WHAT YOU DO!
+	 * ATTENTION: TRUSTING ALL CERTIFICATES IS VERY DANGEROUS AND SHOULD ONLY BE USED IF YOU KNOW WHAT YOU DO!
 	 * @param context The build context
 	 * @param url The url to the remote build
 	 * @param overrideAuth
