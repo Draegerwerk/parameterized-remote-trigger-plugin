@@ -320,6 +320,7 @@ public class RemoteBuildConfigurationTest {
         RemoteBuildConfiguration config = new RemoteBuildConfiguration();
         config.setJob("MyJob");
         config.setTrustAllCertificates(false);
+        config.setOverrideTrustAllCertificates(true);
 
         config = mockGlobalRemoteHost(config,
                 "remoteJenkinsName",

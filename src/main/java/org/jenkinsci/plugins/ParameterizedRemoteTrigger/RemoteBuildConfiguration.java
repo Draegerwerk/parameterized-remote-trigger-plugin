@@ -435,7 +435,7 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 		}
 
 		if (this.overrideTrustAllCertificates) {
-            server.setTrustAllCertificates(this.trustAllCertificates);
+			server.setTrustAllCertificates(this.trustAllCertificates);
         }
 
 		return server;
@@ -900,11 +900,11 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 		if (localAuth != null && !(localAuth instanceof NullAuth)) {
 			String authString = (context.run == null) ? localAuth.getDescriptor().getDisplayName()
 					: localAuth.toString((Item) context.run.getParent());
-			context.logger.println("  Using job-level defined " + authString);
+			context.logger.println(String.format("  Using job-level defined " + authString));
 		} else if (serverAuth != null && !(serverAuth instanceof NullAuth)) {
 			String authString = (context.run == null) ? serverAuth.getDescriptor().getDisplayName()
 					: serverAuth.toString((Item) context.run.getParent());
-			context.logger.println("  Using globally defined " + authString);
+			context.logger.println(String.format("  Using globally defined " + authString));
 		} else {
 			context.logger.println("  No credentials configured");
 		}

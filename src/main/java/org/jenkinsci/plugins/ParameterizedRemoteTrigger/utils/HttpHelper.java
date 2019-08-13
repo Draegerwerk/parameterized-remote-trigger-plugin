@@ -458,7 +458,7 @@ public class HttpHelper {
 		}
 
 		URL url = new URL(urlString);
-		HttpURLConnection conn = (HttpURLConnection) getAuthorizedConnection(context, url, overrideAuth);;
+		HttpURLConnection conn = (HttpURLConnection) getAuthorizedConnection(context, url, overrideAuth);
 
 		try {
 			conn.setDoInput(true);
