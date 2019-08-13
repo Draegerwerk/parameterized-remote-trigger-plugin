@@ -436,7 +436,7 @@ public class RemoteBuildConfiguration extends Builder implements SimpleBuildStep
 
 		if (this.overrideTrustAllCertificates) {
 			server.setTrustAllCertificates(this.trustAllCertificates);
-        }
+		}
 
 		return server;
 	}
